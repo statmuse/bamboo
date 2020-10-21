@@ -47,12 +47,26 @@ defmodule Bamboo.SendGridAdapter do
 
   def deliver(email, config) do
     api_key = get_key(config)
-    body = email |> to_sendgrid_body(config) |> Bamboo.json_library().encode!()
+
+    body =
+      email
+      |> to_sendgrid_body(config)
+      |> Bamboo.json_library().encode!()
+
     url = [base_uri(), @send_message_path]
 
-    case :hackney.post(url, headers(api_key), body, AdapterHelper.hackney_opts(config)) do
+    case :hackney.post(
+           url,
+           headers(api_key),
+           body,
+           AdapterHelper.hackney_opts(config)
+         ) do
       {:ok, status, _headers, response} when status > 299 ->
-        filtered_params = body |> Bamboo.json_library().decode!() |> Map.put("key", "[FILTERED]")
+        filtered_params =
+          body
+          |> Bamboo.json_library().decode!()
+          |> Map.put("key", "[FILTERED]")
+
         raise_api_error(@service_name, response, filtered_params)
 
       {:ok, status, headers, response} ->
@@ -123,6 +137,7 @@ defmodule Bamboo.SendGridAdapter do
     |> put_bypass_list_management(email)
     |> put_google_analytics(email)
     |> put_ip_pool_name(email)
+    |> put_tracking_settings(email)
   end
 
   defp put_from(body, %Email{from: from}) do
@@ -433,4 +448,14 @@ defmodule Bamboo.SendGridAdapter do
     do: Map.put(body, :ip_pool_name, ip_pool_name)
 
   defp put_ip_pool_name(body, _), do: body
+
+  defp put_tracking_settings(body, %Email{
+         private: %{tracking_settings: tracking_settings}
+       }) do
+    Map.update(body, :tracking_settings, tracking_settings, fn settings ->
+      Map.merge(settings, tracking_settings)
+    end)
+  end
+
+  defp put_tracking_settings(body, _), do: body
 end

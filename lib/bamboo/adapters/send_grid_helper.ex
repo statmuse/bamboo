@@ -22,6 +22,7 @@ defmodule Bamboo.SendGridHelper do
   @allowed_google_analytics_utm_params ~w(utm_source utm_medium utm_campaign utm_term utm_content)a
   @send_at_field :sendgrid_send_at
   @ip_pool_name_field :ip_pool_name
+  @tracking_settings :tracking_settings
 
   @doc """
   Specify the template for SendGrid to use for the context of the substitution
@@ -293,5 +294,21 @@ defmodule Bamboo.SendGridHelper do
   def with_ip_pool_name(email, ip_pool_name) do
     email
     |> Email.put_private(@ip_pool_name_field, ip_pool_name)
+  end
+
+  @doc """
+  Add `tracking_settings`.
+
+  ## Example
+
+      with_tracking_settings(email, %{
+        subscription_tracking: %{
+          enable: false
+        }
+      })
+  """
+  def with_tracking_settings(email, settings)
+      when is_map(settings) do
+    Email.put_private(email, @tracking_settings, settings)
   end
 end
